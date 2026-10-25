@@ -1,0 +1,101 @@
+/* Fan Spin Animations */
+@keyframes fanSpin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.fan-spinning {
+  animation: fanSpin var(--fan-duration, 1s) linear infinite;
+  transform-origin: center;
+}
+
+/* Airflow Streamlines */
+@keyframes airflowFlow {
+  0% {
+    opacity: 0.1;
+    stroke-dashoffset: 40;
+  }
+  50% {
+    opacity: 0.7;
+  }
+  100% {
+    opacity: 0.1;
+    stroke-dashoffset: 0;
+  }
+}
+
+.airflow-active {
+  animation: airflowFlow 1.8s ease-in-out infinite;
+}
+
+/* Radio Signal Pulse */
+@keyframes radioPulse {
+  0% {
+    r: 6;
+    opacity: 0.9;
+  }
+  100% {
+    r: 28;
+    opacity: 0;
+  }
+}
+
+.radio-wave {
+  animation: radioPulse 1.6s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+}
+
+/* Alarm Flashing */
+@keyframes alarmFlash {
+  0%,
+  100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 12px rgba(239, 68, 68, 0.8));
+  }
+  50% {
+    opacity: 0.35;
+    filter: none;
+  }
+}
+
+.alarm-flashing {
+  animation: alarmFlash 0.9s ease-in-out infinite;
+}
+
+/* Packet Movement Keyframes */
+@keyframes packetTraverse {
+  0% {
+    offset-distance: 0%;
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    offset-distance: 100%;
+    opacity: 0;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .fan-spinning,
+  .airflow-active,
+  .radio-wave,
+  .alarm-flashing {
+    animation: none !important;
+  }
+}
+
+.reduce-motion .fan-spinning,
+.reduce-motion .airflow-active,
+.reduce-motion .radio-wave,
+.reduce-motion .alarm-flashing {
+  animation: none !important;
+}

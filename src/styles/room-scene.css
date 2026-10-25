@@ -1,0 +1,55 @@
+/* Room Scene Isometric SVG & Canvas Styles */
+.room-scene-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 40%, #16202f 0%, #0b0f17 100%);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  user-select: none;
+}
+
+.room-svg-root {
+  width: 100%;
+  height: 100%;
+  max-height: 580px;
+  filter: drop-shadow(0 15px 30px rgba(0, 0, 0, 0.45));
+}
+
+/* Fan Drop Target in SVG */
+.fan-drop-target {
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.fan-drop-target.is-active-target {
+  stroke: var(--accent-cyan);
+  stroke-width: 3;
+  stroke-dasharray: 6 4;
+  fill: rgba(6, 182, 212, 0.15);
+}
+
+.fan-drop-target.is-occupied-target {
+  stroke: var(--status-alarm);
+  stroke-width: 2.5;
+  fill: rgba(239, 68, 68, 0.1);
+}
+
+/* Draggable virtual load weight */
+.virtual-load-handle {
+  cursor: grab;
+  touch-action: none;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.virtual-load-handle:active {
+  cursor: grabbing;
+  transform: scale(1.06);
+}
+
+.virtual-load-handle:hover {
+  filter: brightness(1.2) drop-shadow(0 4px 10px rgba(6, 182, 212, 0.4));
+}

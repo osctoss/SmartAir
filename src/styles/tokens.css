@@ -1,0 +1,69 @@
+:root {
+  /* Color Palette - Modern Control Room Dark & Light Tokens */
+  --bg-primary: #0b0f17;
+  --bg-secondary: #131b26;
+  --bg-tertiary: #1c2738;
+  --bg-elevated: #243248;
+  --bg-glass: rgba(19, 27, 38, 0.85);
+
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-inverse: #0b0f17;
+
+  --border-subtle: #1e293b;
+  --border-default: #334155;
+  --border-strong: #475569;
+
+  /* Accent Colors */
+  --accent-cyan: #06b6d4;
+  --accent-cyan-glow: rgba(6, 182, 212, 0.25);
+  --accent-blue: #3b82f6;
+  --accent-blue-glow: rgba(59, 130, 246, 0.25);
+
+  /* Status Colors */
+  --status-ready: #10b981;
+  --status-ready-bg: rgba(16, 185, 129, 0.15);
+  --status-ready-border: rgba(16, 185, 129, 0.35);
+
+  --status-warning: #f59e0b;
+  --status-warning-bg: rgba(245, 158, 11, 0.15);
+  --status-warning-border: rgba(245, 158, 11, 0.35);
+
+  --status-alarm: #ef4444;
+  --status-alarm-bg: rgba(239, 68, 68, 0.18);
+  --status-alarm-border: rgba(239, 68, 68, 0.45);
+  --status-alarm-glow: rgba(239, 68, 68, 0.35);
+
+  --status-offline: #64748b;
+  --status-offline-bg: rgba(100, 116, 139, 0.15);
+  --status-offline-border: rgba(100, 116, 139, 0.3);
+
+  /* Spacing & Radii */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+}
+
+[data-theme='light'] {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f1f5f9;
+  --bg-elevated: #e2e8f0;
+  --bg-glass: rgba(255, 255, 255, 0.9);
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --text-inverse: #f8fafc;
+
+  --border-subtle: #e2e8f0;
+  --border-default: #cbd5e1;
+  --border-strong: #94a3b8;
+
+  --status-ready-bg: #ecfdf5;
+  --status-warning-bg: #fffbeb;
+  --status-alarm-bg: #fef2f2;
+  --status-offline-bg: #f1f5f9;
+}

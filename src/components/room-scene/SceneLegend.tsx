@@ -1,5 +1,5 @@
 import React from 'react';
-import { Fan, Thermometer, Radio, Tv } from 'lucide-react';
+import { Fan, Thermometer, Radio, Tv, Droplets, Users } from 'lucide-react';
 
 interface SceneLegendProps {
   fanSpeed: string;
@@ -8,6 +8,10 @@ interface SceneLegendProps {
   indoorTemp: number;
   isCareMode: boolean;
   radioOnline: boolean;
+  acInstalled?: boolean;
+  coolerInstalled?: boolean;
+  coolerEnabled?: boolean;
+  occupancyCount?: number;
 }
 
 export const SceneLegend: React.FC<SceneLegendProps> = ({
@@ -17,9 +21,28 @@ export const SceneLegend: React.FC<SceneLegendProps> = ({
   indoorTemp,
   isCareMode,
   radioOnline,
+  acInstalled = true,
+  coolerInstalled = false,
+  coolerEnabled = false,
+  occupancyCount,
 }) => {
   return (
     <div className="absolute top-4 left-4 flex flex-wrap gap-2 pointer-events-none">
+      {/* Occupancy Badge */}
+      {occupancyCount !== undefined && (
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0e141f]/80 border border-slate-700/60 backdrop-blur-xs text-[11px] text-slate-300 font-medium">
+          <Users className="w-3.5 h-3.5 text-cyan-400" />
+          <span>Occupancy:</span>
+          <strong className="text-white">
+            {occupancyCount === 0
+              ? 'Vacant'
+              : occupancyCount === 1
+              ? '1 Person'
+              : `${occupancyCount} Persons`}
+          </strong>
+        </div>
+      )}
+
       {/* Ceiling Fan Badge */}
       <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0e141f]/80 border border-slate-700/60 backdrop-blur-xs text-[11px] text-slate-300 font-medium">
         <Fan className="w-3.5 h-3.5 text-cyan-400" />
@@ -28,12 +51,23 @@ export const SceneLegend: React.FC<SceneLegendProps> = ({
         <span className="text-slate-500 font-mono">({fanWatts}W)</span>
       </div>
 
-      {/* Wall AC Badge */}
-      <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0e141f]/80 border border-slate-700/60 backdrop-blur-xs text-[11px] text-slate-300 font-medium">
-        <Tv className="w-3.5 h-3.5 text-sky-400" />
-        <span>AC:</span>
-        <strong className="text-white capitalize">{coolingState}</strong>
-      </div>
+      {/* Wall AC Badge (only when installed) */}
+      {acInstalled && (
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0e141f]/80 border border-slate-700/60 backdrop-blur-xs text-[11px] text-slate-300 font-medium">
+          <Tv className="w-3.5 h-3.5 text-sky-400" />
+          <span>AC:</span>
+          <strong className="text-white capitalize">{coolingState}</strong>
+        </div>
+      )}
+
+      {/* Evaporative Cooler Badge (only when installed) */}
+      {coolerInstalled && (
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0e141f]/80 border border-slate-700/60 backdrop-blur-xs text-[11px] text-slate-300 font-medium">
+          <Droplets className="w-3.5 h-3.5 text-teal-400" />
+          <span>Cooler:</span>
+          <strong className="text-white">{coolerEnabled ? 'ON' : 'OFF'}</strong>
+        </div>
+      )}
 
       {/* Sensor Badge */}
       <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0e141f]/80 border border-slate-700/60 backdrop-blur-xs text-[11px] text-slate-300 font-medium">

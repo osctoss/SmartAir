@@ -1,10 +1,8 @@
 import React from 'react';
 import { Room } from '@/domain/types';
-import { SmartCareLoadControls } from './SmartCareLoadControls';
 import { EventPipeline } from './EventPipeline';
 import { useCareEventStore } from '@/state/useCareEventStore';
 import { useSimulationStore } from '@/state/useSimulationStore';
-import { useWorkspaceStore } from '@/state/useWorkspaceStore';
 import { Radio, Volume2, ArrowUpRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -16,40 +14,19 @@ export const SmartCareDashboard: React.FC<SmartCareDashboardProps> = ({ room }) 
   const navigate = useNavigate();
   const { events, sharedSirenActive, localAlarmActiveByRoomId } = useCareEventStore();
   const { radioFault, gatewayFault, sirenFault, toggleFault } = useSimulationStore();
-  const { updateRoom } = useWorkspaceStore();
 
   const isLocalAlarmSounding = localAlarmActiveByRoomId[room.id] || false;
-  const currentThreshold = room.config.smartCareConfig?.illustrativeThresholdKg || 10;
 
   const roomEvents = events.filter((e) => e.roomId === room.id);
   const latestRoomEvent = roomEvents[0];
 
-  const handleUpdateThreshold = (newThreshold: number) => {
-    updateRoom(room.id, {
-      config: {
-        ...room.config,
-        smartCareConfig: {
-          ...room.config.smartCareConfig!,
-          illustrativeThresholdKg: newThreshold,
-        },
-      },
-    });
-  };
-
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* Real-time Event Pipeline Stepper */}
       <EventPipeline latestEvent={latestRoomEvent} />
 
-      {/* Main Controls: Load Generator & Gateway Status */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <SmartCareLoadControls
-          thresholdKg={currentThreshold}
-          onUpdateThreshold={handleUpdateThreshold}
-        />
-
-        {/* Network & Siren Status Card */}
-        <div className="p-5 rounded-2xl bg-[#0e141f] border border-slate-800 space-y-4 shadow-xl flex flex-col justify-between">
+      {/* Network & Siren Status Card */}
+      <div className="p-5 rounded-2xl bg-[#0e141f] border border-slate-800 space-y-4 shadow-xl flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div className="flex items-center gap-2">
@@ -148,6 +125,5 @@ export const SmartCareDashboard: React.FC<SmartCareDashboardProps> = ({ room }) 
           </div>
         </div>
       </div>
-    </div>
   );
 };

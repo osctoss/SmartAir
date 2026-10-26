@@ -36,10 +36,18 @@ export const CeilingFanSvg: React.FC<CeilingFanSvgProps> = ({
       <line x1="0" y1="-40" x2="0" y2="0" stroke="#64748b" strokeWidth="3.5" />
 
       {/* Rotating Blades Container */}
-      <g
-        className={isSpinning ? 'fan-spinning' : ''}
-        style={{ '--fan-duration': duration } as React.CSSProperties}
-      >
+      <g id="fan-blades-rotor">
+        {isSpinning && duration && (
+          <animateTransform
+            key={duration}
+            attributeName="transform"
+            type="rotate"
+            from="0 0 0"
+            to="360 0 0"
+            dur={duration}
+            repeatCount="indefinite"
+          />
+        )}
         {/* Blade 1 (0 deg) */}
         <path
           d="M 0 0 C 10 -8, 65 -15, 85 -5 C 90 -2, 85 8, 75 10 C 50 12, 10 4, 0 0 Z"

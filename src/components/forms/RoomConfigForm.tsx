@@ -1,7 +1,7 @@
 import React from 'react';
 import { Edition, ClimateProfile, CoolingType } from '@/domain/types';
 import { useWorkspaceStore } from '@/state/useWorkspaceStore';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Fan, Tv, Droplets, Monitor } from 'lucide-react';
 
 export interface RoomConfigFormData {
   initialIndoorTempC: number;
@@ -16,6 +16,10 @@ export interface RoomConfigFormData {
   thresholdKg: number;
   localAlarmEnabled: boolean;
   sharedSirenEnabled: boolean;
+  acInstalled: boolean;
+  coolerInstalled: boolean;
+  coolerThresholdPct: number;
+  pcInstalled: boolean;
 }
 
 interface RoomConfigFormProps {
@@ -33,8 +37,149 @@ export const RoomConfigForm: React.FC<RoomConfigFormProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Environmental Conditions */}
+      {/* Device Catalogue & Installed Defaults */}
       <div>
+        <h4 className="text-sm font-bold font-['Outfit'] text-white uppercase tracking-wider mb-2">
+          Device Catalogue & Installed Defaults ({edition === 'smart-home' ? 'Smart Home' : 'Smart Care'})
+        </h4>
+        <p className="text-xs text-slate-400 mb-4">
+          Review default devices for this edition. You can add or remove optional devices.
+        </p>
+
+        <div className="space-y-3">
+          {/* Ceiling Fan */}
+          <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#131b26] border border-slate-700">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                <Fan className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-sm font-semibold text-white block">
+                  Ceiling-Mounted BLDC Fan
+                </span>
+                <span className="text-[11px] text-slate-400 block">
+                  Required device for SmartAir airflow & presence logic
+                </span>
+              </div>
+            </div>
+            <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+              Default Installed
+            </span>
+          </div>
+
+          {/* Wall-Mounted AC */}
+          <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#131b26] border border-slate-700">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400">
+                <Tv className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-sm font-semibold text-white block">
+                  Wall-Mounted Air Conditioner (AC)
+                </span>
+                <span className="text-[11px] text-slate-400 block">
+                  {edition === 'smart-home'
+                    ? 'Default for Smart Home · Step cooling & 5-min delay'
+                    : 'Optional for Smart Care (Not installed by default)'}
+                </span>
+              </div>
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                id="cfg-ac-installed"
+                checked={data.acInstalled}
+                onChange={(e) => onChange({ acInstalled: e.target.checked })}
+                className="w-4 h-4 rounded-sm text-cyan-600 focus:ring-cyan-500 bg-slate-900 border-slate-600 cursor-pointer"
+              />
+              <span className="text-xs text-slate-300 font-medium">
+                {data.acInstalled ? 'Installed' : 'Absent'}
+              </span>
+            </label>
+          </div>
+
+          {/* Evaporative Cooler */}
+          <div className="space-y-3 p-3.5 rounded-xl bg-[#131b26] border border-slate-700">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-teal-500/10 border border-teal-500/30 flex items-center justify-center text-teal-400">
+                  <Droplets className="w-4 h-4" />
+                </div>
+                <div>
+                  <span className="text-sm font-semibold text-white block">
+                    Evaporative Cooler
+                  </span>
+                  <span className="text-[11px] text-slate-400 block">
+                    Optional hot-dry cooling with high-humidity automatic protection
+                  </span>
+                </div>
+              </div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  id="cfg-cooler-installed"
+                  checked={data.coolerInstalled}
+                  onChange={(e) => onChange({ coolerInstalled: e.target.checked })}
+                  className="w-4 h-4 rounded-sm text-teal-600 focus:ring-teal-500 bg-slate-900 border-slate-600 cursor-pointer"
+                />
+                <span className="text-xs text-slate-300 font-medium">
+                  {data.coolerInstalled ? 'Installed' : 'Absent'}
+                </span>
+              </label>
+            </div>
+
+            {data.coolerInstalled && (
+              <div className="pt-2 border-t border-slate-700/60 space-y-1">
+                <div className="flex justify-between items-center text-xs text-slate-300">
+                  <span>High Humidity Protection Threshold</span>
+                  <span className="font-mono text-teal-400 font-bold">{data.coolerThresholdPct}%</span>
+                </div>
+                <input
+                  type="range"
+                  min={50}
+                  max={85}
+                  step={1}
+                  value={data.coolerThresholdPct}
+                  onChange={(e) => onChange({ coolerThresholdPct: parseInt(e.target.value, 10) || 65 })}
+                  className="w-full h-1.5 bg-slate-800 rounded-lg accent-teal-500 cursor-pointer"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* PC Control Interface */}
+          <div className="flex items-center justify-between p-3.5 rounded-xl bg-[#131b26] border border-slate-700">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+                <Monitor className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="text-sm font-semibold text-white block">
+                  PC / Desktop Control Interface
+                </span>
+                <span className="text-[11px] text-slate-400 block">
+                  Desktop app controls for study/meeting Quiet Mode & fan commands
+                </span>
+              </div>
+            </div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                id="cfg-pc-installed"
+                checked={data.pcInstalled}
+                onChange={(e) => onChange({ pcInstalled: e.target.checked })}
+                className="w-4 h-4 rounded-sm text-indigo-600 focus:ring-indigo-500 bg-slate-900 border-slate-600 cursor-pointer"
+              />
+              <span className="text-xs text-slate-300 font-medium">
+                {data.pcInstalled ? 'Installed' : 'Absent'}
+              </span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      {/* Environmental Conditions */}
+      <div className="pt-4 border-t border-slate-800">
         <h4 className="text-sm font-bold font-['Outfit'] text-white uppercase tracking-wider mb-3">
           Starting Environmental Telemetry
         </h4>
@@ -78,7 +223,7 @@ export const RoomConfigForm: React.FC<RoomConfigFormProps> = ({
               min={10}
               max={95}
               value={data.relativeHumidityPct}
-              onChange={(e) => onChange({ relativeHumidityPct: parseInt(e.target.value) || 45 })}
+              onChange={(e) => onChange({ relativeHumidityPct: parseInt(e.target.value, 10) || 45 })}
               className="w-full bg-[#131b26] border border-slate-700 text-white rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-cyan-500"
             />
           </div>
@@ -92,35 +237,23 @@ export const RoomConfigForm: React.FC<RoomConfigFormProps> = ({
             Smart Home Comfort & Appliance Policies
           </h4>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <div>
-              <label className="block text-xs font-semibold uppercase text-slate-300 mb-1.5">
-                Cooling Appliance
-              </label>
-              <select
-                value={data.coolingType}
-                onChange={(e) => onChange({ coolingType: e.target.value as CoolingType })}
-                className="w-full bg-[#131b26] border border-slate-700 text-white rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-cyan-500 cursor-pointer"
-              >
-                <option value="ac">Air Conditioner (AC)</option>
-                <option value="evaporative-cooler">Evaporative Cooler</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold uppercase text-slate-300 mb-1.5">
-                Target Setpoint (°C)
-              </label>
-              <input
-                type="number"
-                min={18}
-                max={30}
-                step={0.5}
-                value={data.setpointC}
-                onChange={(e) => onChange({ setpointC: parseFloat(e.target.value) || 26 })}
-                className="w-full bg-[#131b26] border border-slate-700 text-white rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-cyan-500"
-              />
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {data.acInstalled && (
+              <div>
+                <label className="block text-xs font-semibold uppercase text-slate-300 mb-1.5">
+                  Target AC Setpoint (°C)
+                </label>
+                <input
+                  type="number"
+                  min={18}
+                  max={30}
+                  step={0.5}
+                  value={data.setpointC}
+                  onChange={(e) => onChange({ setpointC: parseFloat(e.target.value) || 26 })}
+                  className="w-full bg-[#131b26] border border-slate-700 text-white rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-cyan-500"
+                />
+              </div>
+            )}
 
             <div>
               <label className="block text-xs font-semibold uppercase text-slate-300 mb-1.5">

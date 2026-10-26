@@ -10,6 +10,7 @@
 
 .fan-spinning {
   animation: fanSpin var(--fan-duration, 1s) linear infinite;
+  transform-box: fill-box;
   transform-origin: center;
 }
 

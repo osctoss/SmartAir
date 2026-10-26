@@ -9,12 +9,25 @@ export type DomainEventType =
   | 'SIMULATION_RESET'
   | 'SENSOR_VALUE_CHANGED'
   | 'OCCUPANCY_CHANGED'
+  | 'PERSON_ENTERED'
+  | 'PERSON_LEFT'
   | 'FAN_STATE_CHANGED'
   | 'COOLING_STATE_CHANGED'
   | 'QUIET_MODE_TOGGLED'
   | 'VACANCY_TIMER_STARTED'
   | 'VACANCY_TIMER_CANCELLED'
   | 'FAN_AUTO_OFF'
+  | 'AC_ACTIVATION_TIMER_STARTED'
+  | 'AC_ACTIVATION_TIMER_CANCELLED'
+  | 'AC_ACTIVATION_EVALUATED'
+  | 'AC_COOLING_STEP'
+  | 'FAN_SPEED_REDUCED_LOW_RPM'
+  | 'COMPRESSOR_REST'
+  | 'AC_REMOVED'
+  | 'AC_INSTALLED'
+  | 'COOLER_STATE_CHANGED'
+  | 'HIGH_HUMIDITY_TRIGGERED'
+  | 'HUMIDITY_RECOVERY_STARTED'
   | 'CARE_LOAD_PLACED'
   | 'CARE_LOAD_REMOVED'
   | 'CARE_THRESHOLD_CROSSED'
@@ -75,10 +88,16 @@ export interface SirenStateEvent extends BaseDomainEvent {
   scope: 'local' | 'shared';
 }
 
+export interface PersonLifecycleEvent extends BaseDomainEvent {
+  type: 'PERSON_ENTERED' | 'PERSON_LEFT';
+  occupancyCount?: number;
+}
+
 export type DomainEvent =
   | BaseDomainEvent
   | FanStateChangedEvent
   | CoolingStateChangedEvent
   | CareThresholdCrossedEvent
   | RadioPacketEvent
-  | SirenStateEvent;
+  | SirenStateEvent
+  | PersonLifecycleEvent;

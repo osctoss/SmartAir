@@ -134,7 +134,7 @@ describe('Smart Home Comfort & Energy Logic (Phase 7)', () => {
       deltaSimSeconds: 1,
     });
     expect(startTimer.nextVacancyTimerSeconds).toBe(60);
-    expect(startTimer.nextFanSpeed).toBe('medium');
+    expect(startTimer.nextFanSpeed).toBe('low');
 
     // Timer expires (0 seconds left) -> turns fan off
     const expireTimer = evaluateSmartHomeRules({

@@ -47,6 +47,10 @@ export const AddRoomPage: React.FC = () => {
     thresholdKg: 10,
     localAlarmEnabled: false,
     sharedSirenEnabled: true,
+    acInstalled: true,
+    coolerInstalled: false,
+    coolerThresholdPct: 65,
+    pcInstalled: true,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -72,6 +76,20 @@ export const AddRoomPage: React.FC = () => {
       setErrors({});
       setCurrentStep('edition');
     } else if (currentStep === 'edition') {
+      // Set edition-specific default devices
+      if (edition === 'smart-care') {
+        setConfig((prev) => ({
+          ...prev,
+          acInstalled: false,
+          pcInstalled: false,
+        }));
+      } else {
+        setConfig((prev) => ({
+          ...prev,
+          acInstalled: true,
+          pcInstalled: true,
+        }));
+      }
       setCurrentStep('config');
     } else if (currentStep === 'config') {
       setCurrentStep('review');
@@ -87,6 +105,11 @@ export const AddRoomPage: React.FC = () => {
   const handleCreate = () => {
     const propertyId = properties[0]?.id || 'prop-default';
     const now = new Date().toISOString();
+    const isSmartHome = edition === 'smart-home';
+
+    const deviceIds = [generatedFanId];
+    if (config.acInstalled) deviceIds.push(`AC-${identity.id}`);
+    if (config.coolerInstalled) deviceIds.push(`COOLER-${identity.id}`);
 
     const newRoom: Room = {
       id: identity.id,
@@ -96,30 +119,41 @@ export const AddRoomPage: React.FC = () => {
       floor: identity.floor,
       notes: identity.notes,
       edition,
-      deviceIds: [generatedFanId],
+      deviceIds,
       gatewayId: edition === 'smart-care' ? config.assignedGatewayId : undefined,
       config: {
         initialIndoorTempC: config.initialIndoorTempC,
         outdoorTempC: config.outdoorTempC,
         relativeHumidityPct: config.relativeHumidityPct,
         occupancy: config.occupancy,
-        occupancyCount: 1,
+        occupancyCount: config.occupancy === 'present' ? 1 : 0,
         climateProfile: config.climateProfile,
         fanDeviceId: generatedFanId,
+        acInstalled: config.acInstalled,
+        coolerInstalled: config.coolerInstalled,
+        pcInstalled: config.pcInstalled,
         fanConfig: {
-          speed: edition === 'smart-home' ? 'low' : 'off',
-          autoMode: edition === 'smart-home',
+          speed: isSmartHome ? 'low' : 'off',
+          autoMode: isSmartHome,
           quietMode: config.quietMode,
           quietSpeedLimit: 'low',
           powerWattsBySpeed: DEFAULT_FAN_POWER_WATTS,
         },
-        coolingConfig: {
-          type: config.coolingType,
-          enabled: true,
-          setpointC: config.setpointC,
-          compressorState: 'resting',
-          powerWattsByState: DEFAULT_AC_POWER_WATTS,
-        },
+        coolingConfig: config.acInstalled
+          ? {
+              type: 'ac',
+              enabled: true,
+              setpointC: config.setpointC,
+              compressorState: 'resting',
+              powerWattsByState: DEFAULT_AC_POWER_WATTS,
+            }
+          : undefined,
+        coolerConfig: config.coolerInstalled
+          ? {
+              enabled: false,
+              highHumidityThresholdPct: config.coolerThresholdPct || 65,
+            }
+          : undefined,
         smartCareConfig:
           edition === 'smart-care'
             ? {

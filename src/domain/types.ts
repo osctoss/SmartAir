@@ -53,6 +53,11 @@ export interface SmartCareConfig {
   assignedGatewayId: string;
 }
 
+export interface CoolerConfig {
+  enabled: boolean;
+  highHumidityThresholdPct: number;
+}
+
 export interface RoomConfig {
   initialIndoorTempC: number;
   outdoorTempC: number;
@@ -63,7 +68,11 @@ export interface RoomConfig {
   fanDeviceId: string;
   fanConfig: FanConfig;
   coolingConfig?: CoolingConfig;
+  coolerConfig?: CoolerConfig;
   smartCareConfig?: SmartCareConfig;
+  acInstalled?: boolean;
+  coolerInstalled?: boolean;
+  pcInstalled?: boolean;
 }
 
 export interface Room {
@@ -180,13 +189,21 @@ export interface LiveRoomState {
   outdoorTempC: number;
   relativeHumidityPct: number;
   occupancy: OccupancyState;
+  occupancyCount: number;
   vacancyTimerRemainingSeconds: number | null;
+  acActivationDelayRemainingSeconds: number | null;
   fanSpeed: FanSpeed;
   fanAutoMode: boolean;
   quietMode: boolean;
   coolingEnabled: boolean;
   coolingSetpointC: number;
   compressorState: CompressorState;
+  acInstalled: boolean;
+  coolerInstalled: boolean;
+  coolerEnabled: boolean;
+  pcInstalled: boolean;
+  highHumidityThresholdPct: number;
+  humidityTrend: 'rising' | 'stable' | 'recovering';
   comfortScore: number;
   currentFanWatts: number;
   currentCoolingWatts: number;

@@ -4,6 +4,8 @@ import { useSimulationStore } from '@/state/useSimulationStore';
 import { RoomShellSvg } from './RoomShellSvg';
 import { CeilingFanSvg } from './CeilingFanSvg';
 import { WallAcSvg } from './WallAcSvg';
+import { EvaporativeCoolerSvg } from './EvaporativeCoolerSvg';
+import { OccupantSvg } from './OccupantSvg';
 import { AirflowOverlay } from './AirflowOverlay';
 import { FanDropTarget } from './FanDropTarget';
 import { VirtualLoadObject } from './VirtualLoadObject';
@@ -22,6 +24,10 @@ export const RoomScene: React.FC<RoomSceneProps> = ({ room }) => {
     coolingEnabled,
     coolingSetpointC,
     indoorTempC,
+    acInstalled,
+    coolerInstalled,
+    coolerEnabled,
+    occupancyCount,
     loadKg,
     loadPlacedOnFan,
     careEventDetected,
@@ -60,13 +66,23 @@ export const RoomScene: React.FC<RoomSceneProps> = ({ room }) => {
         {/* Dynamic Airflow Lines */}
         <AirflowOverlay speed={fanSpeed} />
 
-        {/* Wall Mounted Air Conditioner */}
-        <WallAcSvg
-          type={room.config.coolingConfig?.type}
-          enabled={coolingEnabled}
-          compressorState={compressorState}
-          setpointC={coolingSetpointC}
-        />
+        {/* Visual Occupant(s) Representation */}
+        <OccupantSvg occupancyCount={occupancyCount} />
+
+        {/* Wall Mounted Air Conditioner (Only when installed in room) */}
+        {acInstalled && (
+          <WallAcSvg
+            type={room.config.coolingConfig?.type}
+            enabled={coolingEnabled}
+            compressorState={compressorState}
+            setpointC={coolingSetpointC}
+          />
+        )}
+
+        {/* Evaporative Cooler (Only when installed in room) */}
+        {coolerInstalled && (
+          <EvaporativeCoolerSvg enabled={coolerEnabled} />
+        )}
 
         {/* Ceiling Mounted Fan Assembly */}
         <CeilingFanSvg
@@ -108,6 +124,10 @@ export const RoomScene: React.FC<RoomSceneProps> = ({ room }) => {
         indoorTemp={indoorTempC}
         isCareMode={isCareMode}
         radioOnline={!radioFault}
+        acInstalled={acInstalled}
+        coolerInstalled={coolerInstalled}
+        coolerEnabled={coolerEnabled}
+        occupancyCount={occupancyCount}
       />
     </div>
   );

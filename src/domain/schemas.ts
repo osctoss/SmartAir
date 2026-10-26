@@ -52,6 +52,11 @@ export const SmartCareConfigSchema = z.object({
   assignedGatewayId: z.string().min(1),
 });
 
+export const CoolerConfigSchema = z.object({
+  enabled: z.boolean(),
+  highHumidityThresholdPct: z.number().min(0).max(100),
+});
+
 export const RoomConfigSchema = z.object({
   initialIndoorTempC: z.number().min(-10).max(60),
   outdoorTempC: z.number().min(-10).max(60),
@@ -62,7 +67,11 @@ export const RoomConfigSchema = z.object({
   fanDeviceId: z.string().min(1),
   fanConfig: FanConfigSchema,
   coolingConfig: CoolingConfigSchema.optional(),
+  coolerConfig: CoolerConfigSchema.optional(),
   smartCareConfig: SmartCareConfigSchema.optional(),
+  acInstalled: z.boolean().optional(),
+  coolerInstalled: z.boolean().optional(),
+  pcInstalled: z.boolean().optional(),
 });
 
 export const RoomSchema = z.object({

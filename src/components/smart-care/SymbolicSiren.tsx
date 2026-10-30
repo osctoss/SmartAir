@@ -17,20 +17,20 @@ export const SymbolicSiren: React.FC<SymbolicSirenProps> = ({ gatewayId = 'gw-ma
   const isSimulatorRunning = runState === 'running';
   const isSounding = sharedSirenActive && !sirenFault && isSimulatorRunning;
 
-  // Sync Web Audio synthesizer with siren state
+  // Sync Web Audio synthesizer with live simulation siren state
   useEffect(() => {
     SirenAudioPreview.setMuted(isAudioMuted);
 
     if (isSounding && !isAudioMuted) {
-      SirenAudioPreview.startSiren(0.08);
-    } else if (!isTesting) {
-      SirenAudioPreview.stop();
+      SirenAudioPreview.startSiren(0.22);
+    } else {
+      SirenAudioPreview.stopLiveSiren();
     }
 
     return () => {
-      SirenAudioPreview.stop();
+      SirenAudioPreview.stopLiveSiren();
     };
-  }, [isSounding, isAudioMuted, isTesting]);
+  }, [isSounding, isAudioMuted]);
 
   const handleToggleMute = () => {
     const nextMuted = !isAudioMuted;
@@ -41,10 +41,10 @@ export const SymbolicSiren: React.FC<SymbolicSirenProps> = ({ gatewayId = 'gw-ma
   const handleTestSiren = () => {
     if (isTesting) return;
     setIsTesting(true);
-    SirenAudioPreview.playTone(2000);
+    SirenAudioPreview.playTone(2000, 0.22);
     setTimeout(() => {
       setIsTesting(false);
-    }, 2000);
+    }, 2050);
   };
 
   const handleSilence = () => {

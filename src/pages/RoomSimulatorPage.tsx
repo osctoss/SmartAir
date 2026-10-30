@@ -70,10 +70,10 @@ export const RoomSimulatorPage: React.FC = () => {
     }
   }, [activeRoom?.id]);
 
-  // Stop siren audio whenever simulation pauses or stops
+  // Stop live siren audio whenever simulation pauses or stops
   useEffect(() => {
     if (runState !== 'running') {
-      SirenAudioPreview.stop();
+      SirenAudioPreview.stopLiveSiren();
     }
   }, [runState]);
 

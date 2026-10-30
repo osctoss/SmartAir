@@ -51,15 +51,37 @@ export function evaluateSirenActivation(
  */
 class SyntheticSirenPlayer {
   private audioCtx: AudioContext | null = null;
-  private osc: OscillatorNode | null = null;
-  private lfo: OscillatorNode | null = null;
-  private lfoGain: GainNode | null = null;
-  private gainNode: GainNode | null = null;
-  private _isPlaying = false;
+  private liveOsc: OscillatorNode | null = null;
+  private liveLfo: OscillatorNode | null = null;
+  private liveLfoGain: GainNode | null = null;
+  private liveGain: GainNode | null = null;
+  private testTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  private testNodes: { osc: OscillatorNode; lfo: OscillatorNode; gain: GainNode } | null = null;
+  private _isPlayingLive = false;
   private _isMuted = false;
 
+  private getOrCreateContext(): AudioContext | null {
+    if (typeof window === 'undefined') return null;
+    try {
+      if (!this.audioCtx) {
+        const AudioContextClass =
+          window.AudioContext ||
+          (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        if (!AudioContextClass) return null;
+        this.audioCtx = new AudioContextClass();
+      }
+
+      if (this.audioCtx.state === 'suspended') {
+        this.audioCtx.resume();
+      }
+      return this.audioCtx;
+    } catch {
+      return null;
+    }
+  }
+
   public isPlaying(): boolean {
-    return this._isPlaying;
+    return this._isPlayingLive || this.testNodes !== null;
   }
 
   public isMuted(): boolean {
@@ -68,96 +90,167 @@ class SyntheticSirenPlayer {
 
   public setMuted(muted: boolean): void {
     this._isMuted = muted;
-    if (muted && this._isPlaying) {
+    if (muted) {
       this.stop();
     }
   }
 
-  public startSiren(volume = 0.08): void {
-    if (typeof window === 'undefined') return;
-    if (this._isMuted) return;
-    if (this._isPlaying) return;
+  /**
+   * Starts the continuous building emergency siren during live simulation.
+   */
+  public startSiren(volume = 0.22): void {
+    if (typeof window === 'undefined' || this._isMuted || this._isPlayingLive) return;
 
-    try {
-      if (!this.audioCtx) {
-        const AudioContextClass =
-          window.AudioContext ||
-          (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-        this.audioCtx = new AudioContextClass();
-      }
+    const ctx = this.getOrCreateContext();
+    if (!ctx) return;
 
-      if (this.audioCtx.state === 'suspended') {
-        this.audioCtx.resume();
-      }
-
-      this.stop(); // Stop any leftover nodes
-
-      const now = this.audioCtx.currentTime;
-
-      // Main tone oscillator (center frequency 780 Hz)
-      this.osc = this.audioCtx.createOscillator();
-      this.osc.type = 'sawtooth';
-      this.osc.frequency.setValueAtTime(780, now);
-
-      // Low-Frequency Oscillator (LFO) for periodic siren wail (1.2 Hz cycle)
-      this.lfo = this.audioCtx.createOscillator();
-      this.lfo.type = 'triangle';
-      this.lfo.frequency.setValueAtTime(1.2, now);
-
-      // Pitch depth (+- 130 Hz sweep)
-      this.lfoGain = this.audioCtx.createGain();
-      this.lfoGain.gain.setValueAtTime(130, now);
-
-      this.lfo.connect(this.lfoGain);
-      this.lfoGain.connect(this.osc.frequency);
-
-      // Master gain for safe volume
-      this.gainNode = this.audioCtx.createGain();
-      this.gainNode.gain.setValueAtTime(Math.min(0.12, volume), now);
-
-      this.osc.connect(this.gainNode);
-      this.gainNode.connect(this.audioCtx.destination);
-
-      this.osc.start(now);
-      this.lfo.start(now);
-      this._isPlaying = true;
-    } catch (e) {
-      console.warn('Audio preview error:', e);
+    if (ctx.state === 'suspended') {
+      ctx.resume().then(() => this.initLiveSiren(ctx, volume)).catch(() => {});
+    } else {
+      this.initLiveSiren(ctx, volume);
     }
   }
 
-  public stop(): void {
-    this._isPlaying = false;
+  private initLiveSiren(ctx: AudioContext, volume: number): void {
+    this.stopLiveSiren();
+
+    const now = ctx.currentTime;
+
+    // Main carrier tone (750 Hz center)
+    this.liveOsc = ctx.createOscillator();
+    this.liveOsc.type = 'sawtooth';
+    this.liveOsc.frequency.setValueAtTime(750, now);
+
+    // LFO: 1.2 Hz cycle for wail
+    this.liveLfo = ctx.createOscillator();
+    this.liveLfo.type = 'triangle';
+    this.liveLfo.frequency.setValueAtTime(1.2, now);
+
+    this.liveLfoGain = ctx.createGain();
+    this.liveLfoGain.gain.setValueAtTime(160, now);
+
+    this.liveLfo.connect(this.liveLfoGain);
+    this.liveLfoGain.connect(this.liveOsc.frequency);
+
+    // Master volume gain
+    this.liveGain = ctx.createGain();
+    this.liveGain.gain.setValueAtTime(Math.min(0.3, volume), now);
+
+    this.liveOsc.connect(this.liveGain);
+    this.liveGain.connect(ctx.destination);
+
+    this.liveOsc.start(now);
+    this.liveLfo.start(now);
+    this._isPlayingLive = true;
+  }
+
+  /**
+   * Stops only the live continuous simulation siren.
+   */
+  public stopLiveSiren(): void {
+    this._isPlayingLive = false;
     try {
-      if (this.osc) {
-        this.osc.stop();
-        this.osc.disconnect();
-        this.osc = null;
+      if (this.liveOsc) {
+        this.liveOsc.stop();
+        this.liveOsc.disconnect();
+        this.liveOsc = null;
       }
-      if (this.lfo) {
-        this.lfo.stop();
-        this.lfo.disconnect();
-        this.lfo = null;
+      if (this.liveLfo) {
+        this.liveLfo.stop();
+        this.liveLfo.disconnect();
+        this.liveLfo = null;
       }
-      if (this.lfoGain) {
-        this.lfoGain.disconnect();
-        this.lfoGain = null;
+      if (this.liveLfoGain) {
+        this.liveLfoGain.disconnect();
+        this.liveLfoGain = null;
       }
-      if (this.gainNode) {
-        this.gainNode.disconnect();
-        this.gainNode = null;
+      if (this.liveGain) {
+        this.liveGain.disconnect();
+        this.liveGain = null;
       }
     } catch {
-      // Ignore
+      // ignore
     }
   }
 
-  public playTone(durationMs = 1500): void {
+  /**
+   * Play a dedicated 2-second user test tone that cannot be canceled by simulation clock state.
+   */
+  public playTone(durationMs = 2000, volume = 0.22): void {
     if (this._isMuted) return;
-    this.startSiren(0.06);
-    setTimeout(() => {
-      this.stop();
-    }, durationMs);
+
+    const ctx = this.getOrCreateContext();
+    if (!ctx) return;
+
+    const run = () => {
+      this.stopTestTone();
+
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(750, now);
+
+      const lfo = ctx.createOscillator();
+      lfo.type = 'triangle';
+      lfo.frequency.setValueAtTime(1.3, now);
+
+      const lfoGain = ctx.createGain();
+      lfoGain.gain.setValueAtTime(160, now);
+
+      lfo.connect(lfoGain);
+      lfoGain.connect(osc.frequency);
+
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.01, now);
+      gain.gain.exponentialRampToValueAtTime(volume, now + 0.08);
+      gain.gain.setValueAtTime(volume, now + durationMs / 1000 - 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + durationMs / 1000);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      lfo.start(now);
+
+      this.testNodes = { osc, lfo, gain };
+
+      this.testTimeoutId = setTimeout(() => {
+        this.stopTestTone();
+      }, durationMs + 50);
+    };
+
+    if (ctx.state === 'suspended') {
+      ctx.resume().then(run).catch(run);
+    } else {
+      run();
+    }
+  }
+
+  public stopTestTone(): void {
+    if (this.testTimeoutId) {
+      clearTimeout(this.testTimeoutId);
+      this.testTimeoutId = null;
+    }
+    if (this.testNodes) {
+      try {
+        this.testNodes.osc.stop();
+        this.testNodes.lfo.stop();
+        this.testNodes.osc.disconnect();
+        this.testNodes.lfo.disconnect();
+        this.testNodes.gain.disconnect();
+      } catch {
+        // ignore
+      }
+      this.testNodes = null;
+    }
+  }
+
+  /**
+   * Universal stop: stops both live siren and test preview.
+   */
+  public stop(): void {
+    this.stopLiveSiren();
+    this.stopTestTone();
   }
 }
 

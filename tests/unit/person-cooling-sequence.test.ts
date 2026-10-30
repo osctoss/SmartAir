@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { evaluateSmartHomeRules } from '@/simulation/smart-home/control-rules';
+import { evaluateLoadCrossing } from '@/simulation/smart-care/load-event';
 import { useSimulationStore } from '@/state/useSimulationStore';
 import { Room } from '@/domain/types';
 import { CoolingStateChangedEvent } from '@/domain/events';
@@ -474,12 +475,30 @@ describe('Person Entry, 5-Minute AC Delay & Cooling Progression (Requirements 1 
       expect(running.acActivationDelayRemainingSeconds).toBe(300);
     });
 
-    it('when simulator is paused, virtual load does not trigger care event until simulator runs', () => {
+    it('when simulator is paused, virtual load does not trigger care event until evaluated in running loop', () => {
       useSimulationStore.getState().setRunState('paused');
       useSimulationStore.getState().setVirtualLoadState(15, true);
-      expect(useSimulationStore.getState().careEventDetected).toBe(false);
+      const pausedState = useSimulationStore.getState();
+      expect(pausedState.careEventDetected).toBe(false);
 
-      useSimulationStore.getState().setRunState('running');
+      // When simulator runs, evaluateLoadCrossing triggers the care event and arms the latch
+      const evalRes = evaluateLoadCrossing({
+        simTimeMs: 1000,
+        currentLoadKg: pausedState.loadKg,
+        thresholdKg: 10,
+        isPlacedOnFan: pausedState.loadPlacedOnFan,
+        wasPreviouslyAboveThreshold: pausedState.careEventDetected,
+        propertyId: 'prop-1',
+        roomId: 'room-test-01',
+        fanDeviceId: 'FAN-101',
+        localAlarmEnabled: true,
+        localAlarmAvailable: true,
+        radioOnline: true,
+      });
+
+      expect(evalRes.isEventTriggered).toBe(true);
+      expect(evalRes.careEvent).not.toBeNull();
+      useSimulationStore.getState().applySimulationStep({ careEventDetected: true });
       expect(useSimulationStore.getState().careEventDetected).toBe(true);
     });
   });

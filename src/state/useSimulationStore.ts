@@ -296,14 +296,11 @@ export const useSimulationStore = create<SimulationState>((set) => ({
           }
         }
 
-        const careTriggered = state.loadPlacedOnFan && state.loadKg > 10;
-
         return {
           runState,
           fanSpeed: nextFan,
           currentFanWatts: nextWatts,
           acActivationDelayRemainingSeconds: nextDelay,
-          careEventDetected: careTriggered,
           logs:
             events.length > 0
               ? [...events, ...state.logs].slice(0, SYSTEM_DEFAULTS.MAX_LOG_ENTRIES)
@@ -614,11 +611,15 @@ export const useSimulationStore = create<SimulationState>((set) => ({
   setHumidityTrend: (humidityTrend) => set({ humidityTrend }),
 
   setVirtualLoadState: (loadKg, loadPlacedOnFan) =>
-    set((state) => ({
-      loadKg,
-      loadPlacedOnFan,
-      careEventDetected: state.runState === 'running' && loadPlacedOnFan && loadKg > 10,
-    })),
+    set((state) => {
+      // If load is removed or drops below threshold, reset latch so subsequent load placement re-arms
+      const remainsAbove = loadPlacedOnFan && loadKg > 10;
+      return {
+        loadKg,
+        loadPlacedOnFan,
+        careEventDetected: remainsAbove ? state.careEventDetected : false,
+      };
+    }),
 
   toggleFault: (fault) =>
     set((state) => {

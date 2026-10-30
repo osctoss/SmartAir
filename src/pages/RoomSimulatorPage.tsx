@@ -43,6 +43,8 @@ export const RoomSimulatorPage: React.FC = () => {
     acInstalled,
     coolerInstalled,
     careEventDetected,
+    loadKg,
+    loadPlacedOnFan,
     initRoomSimulation,
     applySimulationStep,
   } = useSimulationStore();
@@ -225,6 +227,9 @@ export const RoomSimulatorPage: React.FC = () => {
 
       if (evalResult.isEventTriggered && evalResult.careEvent) {
         const newEvt = evalResult.careEvent;
+        // Latch careEventDetected in store so edge trigger does not re-fire on next ticks
+        applySimulationStep({ careEventDetected: true });
+
         recordCareEvent(newEvt);
 
         if (evalResult.localAlarmActive) {
@@ -261,7 +266,7 @@ export const RoomSimulatorPage: React.FC = () => {
               sourceRoomId: activeRoom.id,
               destinationGatewayId: activeRoom.config.smartCareConfig?.assignedGatewayId || 'gw-main',
               eventType: 'abnormal-load' as const,
-              createdAtSimMs: live.simTimeMs,
+              createdAtSimMs: currentLive.simTimeMs,
               status: 'transmitting' as const,
               simulatedLatencyMs: 750,
             };
@@ -305,9 +310,13 @@ export const RoomSimulatorPage: React.FC = () => {
         } else {
           updateEventStage(newEvt.id, 'radio-transmission', 'failed', 'Radio link faulted.');
         }
+      } else if (!evalResult.isNowAboveThreshold && live.careEventDetected) {
+        // Unlatch when load is removed or drops below threshold
+        applySimulationStep({ careEventDetected: false });
+        setLocalRoomAlarm(activeRoom.id, false);
       }
     }
-  }, [simTimeMs, runState, activeRoom?.id]);
+  }, [simTimeMs, runState, activeRoom?.id, loadPlacedOnFan, loadKg]);
 
   if (!activeRoom) {
     return (

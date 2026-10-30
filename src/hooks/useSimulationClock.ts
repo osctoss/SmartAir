@@ -1,5 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useSimulationStore } from '@/state/useSimulationStore';
+import { useCareEventStore } from '@/state/useCareEventStore';
+import { SirenAudioPreview } from '@/simulation/smart-care/siren-simulator';
 
 export function useSimulationClock() {
   const {
@@ -17,7 +19,11 @@ export function useSimulationClock() {
   const animFrameIdRef = useRef<number | null>(null);
 
   const togglePlay = useCallback(() => {
-    setRunState(isRunning ? 'paused' : 'running');
+    const nextState = isRunning ? 'paused' : 'running';
+    setRunState(nextState);
+    if (nextState !== 'running') {
+      SirenAudioPreview.stop();
+    }
   }, [isRunning, setRunState]);
 
   const advanceOneMinute = useCallback(() => {
@@ -28,6 +34,8 @@ export function useSimulationClock() {
 
   const reset = useCallback(() => {
     resetSimulationState();
+    useCareEventStore.getState().setSharedSiren(false);
+    SirenAudioPreview.stop();
   }, [resetSimulationState]);
 
   // Frame tick loop

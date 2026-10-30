@@ -44,6 +44,7 @@ describe('Person Entry, 5-Minute AC Delay & Cooling Progression (Requirements 1 
   beforeEach(() => {
     useSimulationStore.getState().resetSimulationState();
     useSimulationStore.getState().initRoomSimulation(baseTestRoom);
+    useSimulationStore.getState().setRunState('running');
   });
 
   describe('1.1 Occupancy & Person Lifecycle', () => {
@@ -443,6 +444,43 @@ describe('Person Entry, 5-Minute AC Delay & Cooling Progression (Requirements 1 
       expect(coolingStep.nextIndoorTempC).toBe(26);
       expect(coolingStep.nextCompressorState).toBe('off'); // Reached setpoint and rests
       expect(coolingStep.nextFanSpeed).toBe('low'); // Fan stays at low RPM
+    });
+  });
+
+  describe('1.4 Strong Constraint: Simulator Running Guard (Inactivity when Paused/Idle)', () => {
+    it('when simulator is paused or idle, adding a person updates presence but leaves fan OFF and delay null', () => {
+      useSimulationStore.getState().setRunState('paused');
+      const store = useSimulationStore.getState();
+      store.addPerson();
+
+      const updated = useSimulationStore.getState();
+      expect(updated.occupancyCount).toBe(1);
+      expect(updated.occupancy).toBe('present');
+      expect(updated.fanSpeed).toBe('off');
+      expect(updated.currentFanWatts).toBe(0);
+      expect(updated.acActivationDelayRemainingSeconds).toBeNull();
+    });
+
+    it('clicking Run Sim immediately starts fan and schedules AC delay for already present occupants', () => {
+      useSimulationStore.getState().setRunState('idle');
+      useSimulationStore.getState().addPerson();
+      expect(useSimulationStore.getState().fanSpeed).toBe('off');
+
+      // User starts simulator
+      useSimulationStore.getState().setRunState('running');
+      const running = useSimulationStore.getState();
+      expect(running.fanSpeed).toBe('medium');
+      expect(running.currentFanWatts).toBe(28);
+      expect(running.acActivationDelayRemainingSeconds).toBe(300);
+    });
+
+    it('when simulator is paused, virtual load does not trigger care event until simulator runs', () => {
+      useSimulationStore.getState().setRunState('paused');
+      useSimulationStore.getState().setVirtualLoadState(15, true);
+      expect(useSimulationStore.getState().careEventDetected).toBe(false);
+
+      useSimulationStore.getState().setRunState('running');
+      expect(useSimulationStore.getState().careEventDetected).toBe(true);
     });
   });
 

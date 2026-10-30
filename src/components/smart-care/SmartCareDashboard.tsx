@@ -1,6 +1,7 @@
 import React from 'react';
 import { Room } from '@/domain/types';
 import { EventPipeline } from './EventPipeline';
+import { SymbolicSiren } from './SymbolicSiren';
 import { useCareEventStore } from '@/state/useCareEventStore';
 import { useSimulationStore } from '@/state/useSimulationStore';
 import { Radio, Volume2, ArrowUpRight } from 'lucide-react';
@@ -24,6 +25,9 @@ export const SmartCareDashboard: React.FC<SmartCareDashboardProps> = ({ room }) 
     <div className="space-y-4">
       {/* Real-time Event Pipeline Stepper */}
       <EventPipeline latestEvent={latestRoomEvent} />
+
+      {/* Symbolic Building Siren Unit with Audio Controls */}
+      <SymbolicSiren gatewayId={room.config.smartCareConfig?.assignedGatewayId} />
 
       {/* Network & Siren Status Card */}
       <div className="p-5 rounded-2xl bg-[#0e141f] border border-slate-800 space-y-4 shadow-xl flex flex-col justify-between">

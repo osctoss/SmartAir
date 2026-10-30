@@ -258,7 +258,60 @@ export const useSimulationStore = create<SimulationState>((set) => ({
     });
   },
 
-  setRunState: (runState) => set({ runState }),
+  setRunState: (runState) =>
+    set((state) => {
+      if (runState === 'running') {
+        const events: DomainEvent[] = [];
+        let nextFan = state.fanSpeed;
+        let nextWatts = state.currentFanWatts;
+        let nextDelay = state.acActivationDelayRemainingSeconds;
+
+        if (state.occupancyCount > 0) {
+          if (state.fanAutoMode && nextFan === 'off') {
+            nextFan = 'medium';
+            nextWatts = DEFAULT_FAN_POWER_WATTS['medium'];
+            events.push({
+              id: `evt-fan-run-${Date.now()}`,
+              simTimeMs: state.simTimeMs,
+              timestampIso: new Date().toISOString(),
+              type: 'FAN_STATE_CHANGED',
+              oldSpeed: 'off',
+              newSpeed: 'medium',
+              reason: 'Simulation started — occupant present, fan switched ON.',
+              summary: 'Occupancy active: fan started at medium speed.',
+              severity: 'info',
+            });
+          }
+
+          if (state.acInstalled && nextDelay === null && state.compressorState === 'off') {
+            nextDelay = SYSTEM_DEFAULTS.AC_ACTIVATION_DELAY_SECONDS;
+            events.push({
+              id: `evt-ac-delay-run-${Date.now()}`,
+              simTimeMs: state.simTimeMs,
+              timestampIso: new Date().toISOString(),
+              type: 'AC_ACTIVATION_TIMER_STARTED',
+              summary: 'Simulation started — AC activation scheduled in 5 minutes.',
+              severity: 'info',
+            });
+          }
+        }
+
+        const careTriggered = state.loadPlacedOnFan && state.loadKg > 10;
+
+        return {
+          runState,
+          fanSpeed: nextFan,
+          currentFanWatts: nextWatts,
+          acActivationDelayRemainingSeconds: nextDelay,
+          careEventDetected: careTriggered,
+          logs:
+            events.length > 0
+              ? [...events, ...state.logs].slice(0, SYSTEM_DEFAULTS.MAX_LOG_ENTRIES)
+              : state.logs,
+        };
+      }
+      return { runState };
+    }),
   setSpeedMultiplier: (speedMultiplier) => set({ speedMultiplier }),
 
   updateInputs: (inputs) =>
@@ -276,36 +329,49 @@ export const useSimulationStore = create<SimulationState>((set) => ({
       let nextFanSpeed = state.fanSpeed;
       let nextDelay = state.acActivationDelayRemainingSeconds;
       const events: DomainEvent[] = [];
+      const isRunning = state.runState === 'running';
 
       if (isFirstPerson) {
-        // First person enters unoccupied room:
-        // 1. Immediately turn fan on at default operating speed if off
-        if (nextFanSpeed === 'off') {
-          nextFanSpeed = 'medium';
-        }
+        if (isRunning) {
+          // Simulator running: Immediately turn fan on at default operating speed if off
+          if (nextFanSpeed === 'off') {
+            nextFanSpeed = 'medium';
+          }
 
-        // 2. If room has AC, start 5-minute simulated delay
-        if (state.acInstalled) {
-          nextDelay = SYSTEM_DEFAULTS.AC_ACTIVATION_DELAY_SECONDS;
+          // If room has AC, start 5-minute simulated delay
+          if (state.acInstalled) {
+            nextDelay = SYSTEM_DEFAULTS.AC_ACTIVATION_DELAY_SECONDS;
+            events.push({
+              id: `evt-ac-delay-start-${Date.now()}`,
+              simTimeMs: state.simTimeMs,
+              timestampIso: new Date().toISOString(),
+              type: 'AC_ACTIVATION_TIMER_STARTED',
+              summary: 'AC activation scheduled in 5 minutes.',
+              severity: 'info',
+            });
+          }
+
           events.push({
-            id: `evt-ac-delay-start-${Date.now()}`,
+            id: `evt-person-enter-${Date.now()}`,
             simTimeMs: state.simTimeMs,
             timestampIso: new Date().toISOString(),
-            type: 'AC_ACTIVATION_TIMER_STARTED',
-            summary: 'AC activation scheduled in 5 minutes.',
+            type: 'PERSON_ENTERED',
+            occupancyCount: nextCount,
+            summary: 'Occupancy detected — fan switched ON.',
+            severity: 'info',
+          });
+        } else {
+          // Strong constraint: Simulator is paused/idle: Occupant enters, but fan/AC remain dormant until Run Sim is started
+          events.push({
+            id: `evt-person-enter-standby-${Date.now()}`,
+            simTimeMs: state.simTimeMs,
+            timestampIso: new Date().toISOString(),
+            type: 'PERSON_ENTERED',
+            occupancyCount: nextCount,
+            summary: 'Person entered room. (Simulation standby/paused — actuators will activate when simulator runs).',
             severity: 'info',
           });
         }
-
-        events.push({
-          id: `evt-person-enter-${Date.now()}`,
-          simTimeMs: state.simTimeMs,
-          timestampIso: new Date().toISOString(),
-          type: 'PERSON_ENTERED',
-          occupancyCount: nextCount,
-          summary: 'Occupancy detected — fan switched ON.',
-          severity: 'info',
-        });
       } else {
         // Subsequent occupants entering: do NOT restart AC timer
         events.push({
@@ -324,7 +390,7 @@ export const useSimulationStore = create<SimulationState>((set) => ({
         occupancy: 'present',
         vacancyTimerRemainingSeconds: null,
         fanSpeed: nextFanSpeed,
-        currentFanWatts: DEFAULT_FAN_POWER_WATTS[nextFanSpeed],
+        currentFanWatts: isRunning ? DEFAULT_FAN_POWER_WATTS[nextFanSpeed] : 0,
         acActivationDelayRemainingSeconds: nextDelay,
         logs: [...events, ...state.logs].slice(0, SYSTEM_DEFAULTS.MAX_LOG_ENTRIES),
       };
@@ -336,6 +402,7 @@ export const useSimulationStore = create<SimulationState>((set) => ({
 
       const nextCount = state.occupancyCount - 1;
       const events: DomainEvent[] = [];
+      const isRunning = state.runState === 'running';
 
       if (nextCount === 0) {
         // Last person leaves:
@@ -358,9 +425,10 @@ export const useSimulationStore = create<SimulationState>((set) => ({
           });
         }
 
-        // 2. Reduce fan to LOW immediately
-        const nextFanSpeed = state.fanSpeed !== 'off' ? 'low' : 'off';
-        const nextFanWatts = DEFAULT_FAN_POWER_WATTS[nextFanSpeed];
+        // 2. Reduce fan to LOW immediately if running, else off
+        const nextFanSpeed = isRunning && state.fanSpeed !== 'off' ? 'low' : 'off';
+        const nextFanWatts = isRunning ? DEFAULT_FAN_POWER_WATTS[nextFanSpeed] : 0;
+        const vacancyDelay = isRunning ? SYSTEM_DEFAULTS.VACANCY_DELAY_SECONDS : null;
 
         events.push({
           id: `evt-person-left-vac-${Date.now()}`,
@@ -368,19 +436,21 @@ export const useSimulationStore = create<SimulationState>((set) => ({
           timestampIso: new Date().toISOString(),
           type: 'PERSON_LEFT',
           occupancyCount: 0,
-          summary: 'Room vacant — AC switched OFF.',
+          summary: isRunning ? 'Room vacant — fan reduced to low; vacancy timer started.' : 'Room vacant.',
           severity: 'notice',
         });
 
-        // 3. Start 20-second vacancy countdown
-        events.push({
-          id: `evt-vac-countdown-${Date.now()}`,
-          simTimeMs: state.simTimeMs,
-          timestampIso: new Date().toISOString(),
-          type: 'VACANCY_TIMER_STARTED',
-          summary: `Vacancy timer: ${SYSTEM_DEFAULTS.VACANCY_DELAY_SECONDS} seconds remaining.`,
-          severity: 'notice',
-        });
+        // 3. Start 20-second vacancy countdown only when simulator is running
+        if (isRunning) {
+          events.push({
+            id: `evt-vac-countdown-${Date.now()}`,
+            simTimeMs: state.simTimeMs,
+            timestampIso: new Date().toISOString(),
+            type: 'VACANCY_TIMER_STARTED',
+            summary: `Vacancy timer: ${SYSTEM_DEFAULTS.VACANCY_DELAY_SECONDS} seconds remaining.`,
+            severity: 'notice',
+          });
+        }
 
         return {
           occupancyCount: 0,
@@ -391,7 +461,7 @@ export const useSimulationStore = create<SimulationState>((set) => ({
           coolingStepAccumulatorSeconds: 0,
           fanSpeed: nextFanSpeed,
           currentFanWatts: nextFanWatts,
-          vacancyTimerRemainingSeconds: SYSTEM_DEFAULTS.VACANCY_DELAY_SECONDS,
+          vacancyTimerRemainingSeconds: vacancyDelay,
           logs: [...events, ...state.logs].slice(0, SYSTEM_DEFAULTS.MAX_LOG_ENTRIES),
         };
       } else {
@@ -416,6 +486,8 @@ export const useSimulationStore = create<SimulationState>((set) => ({
     set((state) => {
       const sanitized = Math.max(0, Math.floor(count));
       if (sanitized === state.occupancyCount) return state;
+      const isRunning = state.runState === 'running';
+
       if (sanitized === 0) {
         return {
           ...state,
@@ -425,19 +497,22 @@ export const useSimulationStore = create<SimulationState>((set) => ({
           currentCoolingWatts: 0,
           acActivationDelayRemainingSeconds: null,
           coolingStepAccumulatorSeconds: 0,
-          fanSpeed: state.fanSpeed !== 'off' ? 'low' : 'off',
-          vacancyTimerRemainingSeconds: SYSTEM_DEFAULTS.VACANCY_DELAY_SECONDS,
+          fanSpeed: isRunning && state.fanSpeed !== 'off' ? 'low' : 'off',
+          currentFanWatts: isRunning && state.fanSpeed !== 'off' ? DEFAULT_FAN_POWER_WATTS['low'] : 0,
+          vacancyTimerRemainingSeconds: isRunning ? SYSTEM_DEFAULTS.VACANCY_DELAY_SECONDS : null,
         };
       } else {
         const wasEmpty = state.occupancyCount === 0;
+        const nextSpeed = isRunning && wasEmpty && state.fanSpeed === 'off' ? 'medium' : state.fanSpeed;
         return {
           ...state,
           occupancyCount: sanitized,
           occupancy: 'present',
           vacancyTimerRemainingSeconds: null,
-          fanSpeed: wasEmpty && state.fanSpeed === 'off' ? 'medium' : state.fanSpeed,
+          fanSpeed: nextSpeed,
+          currentFanWatts: isRunning ? DEFAULT_FAN_POWER_WATTS[nextSpeed] : 0,
           acActivationDelayRemainingSeconds:
-            wasEmpty && state.acInstalled
+            isRunning && wasEmpty && state.acInstalled
               ? SYSTEM_DEFAULTS.AC_ACTIVATION_DELAY_SECONDS
               : state.acActivationDelayRemainingSeconds,
         };
@@ -539,11 +614,11 @@ export const useSimulationStore = create<SimulationState>((set) => ({
   setHumidityTrend: (humidityTrend) => set({ humidityTrend }),
 
   setVirtualLoadState: (loadKg, loadPlacedOnFan) =>
-    set({
+    set((state) => ({
       loadKg,
       loadPlacedOnFan,
-      careEventDetected: loadPlacedOnFan && loadKg > 10,
-    }),
+      careEventDetected: state.runState === 'running' && loadPlacedOnFan && loadKg > 10,
+    })),
 
   toggleFault: (fault) =>
     set((state) => {

@@ -24,6 +24,8 @@ import { stepIndoorTemperature } from '@/simulation/smart-home/thermal-model';
 import { stepRelativeHumidity } from '@/simulation/smart-home/humidity-model';
 import { calculateComfortScore } from '@/simulation/smart-home/comfort';
 import { calculatePowerWatts, integrateEnergyStep } from '@/simulation/smart-home/energy-model';
+import { processGatewayIngestion } from '@/simulation/smart-care/gateway-simulator';
+import { evaluateSirenActivation, SirenAudioPreview } from '@/simulation/smart-care/siren-simulator';
 import { Home, Shield, ArrowLeft, Cpu } from 'lucide-react';
 
 export const RoomSimulatorPage: React.FC = () => {
@@ -68,26 +70,35 @@ export const RoomSimulatorPage: React.FC = () => {
     }
   }, [activeRoom?.id]);
 
+  // Stop siren audio whenever simulation pauses or stops
+  useEffect(() => {
+    if (runState !== 'running') {
+      SirenAudioPreview.stop();
+    }
+  }, [runState]);
+
   // Simulation Step Evaluation Loop: Smart Home vs Smart Care
   useEffect(() => {
     if (!activeRoom) return;
 
+    const live = useSimulationStore.getState();
+
+    // Detect reset
+    if (live.simTimeMs === 0 && lastSimTimeMsRef.current > 0) {
+      lastSimTimeMsRef.current = 0;
+      simMsAccumulatorRef.current = 0;
+      return;
+    }
+
+    const deltaMs = live.simTimeMs - lastSimTimeMsRef.current;
+    lastSimTimeMsRef.current = live.simTimeMs;
+
+    // Strong constraint: If paused and time did not advance (no +1 Min click), do not step any activity
+    if (runState !== 'running' && deltaMs <= 0) {
+      return;
+    }
+
     if (activeRoom.edition === 'smart-home') {
-      const live = useSimulationStore.getState();
-
-      // Detect reset
-      if (live.simTimeMs === 0 && lastSimTimeMsRef.current > 0) {
-        lastSimTimeMsRef.current = 0;
-        simMsAccumulatorRef.current = 0;
-        return;
-      }
-
-      const deltaMs = live.simTimeMs - lastSimTimeMsRef.current;
-      lastSimTimeMsRef.current = live.simTimeMs;
-
-      // If paused and time did not advance (no +1 Min click), do not step
-      if (runState !== 'running' && deltaMs <= 0) return;
-
       // Accumulate elapsed virtual time
       simMsAccumulatorRef.current += Math.max(0, deltaMs);
 
@@ -193,8 +204,9 @@ export const RoomSimulatorPage: React.FC = () => {
         rules.events,
       );
     } else {
-      // Smart Care Abnormal-Load Evaluation
-      const live = useSimulationStore.getState();
+      // Smart Care Abnormal-Load Evaluation (Only when simulator is running)
+      if (runState !== 'running') return;
+
       const threshold = activeRoom.config.smartCareConfig?.illustrativeThresholdKg || 10;
       const evalResult = evaluateLoadCrossing({
         simTimeMs: live.simTimeMs,
@@ -237,19 +249,57 @@ export const RoomSimulatorPage: React.FC = () => {
           // Simulate deterministic delivery after 800ms
           setTimeout(() => {
             const currentLive = useSimulationStore.getState();
-            if (!currentLive.gatewayFault) {
-              updateRadioPacket(packetId, { status: 'received' });
-              updateEventStage(newEvt.id, 'gateway-processing', 'success', 'Room ID resolved in building registry.');
+            if (currentLive.runState !== 'running') return;
 
-              if (!currentLive.sirenFault) {
+            const workspaceGateways = useWorkspaceStore.getState().gateways;
+            const workspaceRooms = useWorkspaceStore.getState().rooms;
+
+            const currentPacket = {
+              packetId,
+              eventId: newEvt.id,
+              sourceDeviceId: activeRoom.config.fanDeviceId,
+              sourceRoomId: activeRoom.id,
+              destinationGatewayId: activeRoom.config.smartCareConfig?.assignedGatewayId || 'gw-main',
+              eventType: 'abnormal-load' as const,
+              createdAtSimMs: live.simTimeMs,
+              status: 'transmitting' as const,
+              simulatedLatencyMs: 750,
+            };
+
+            const effectiveGateways = workspaceGateways.map((g) =>
+              currentLive.gatewayFault ? { ...g, status: 'offline' as const } : g,
+            );
+
+            const gwResult = processGatewayIngestion(
+              currentPacket,
+              effectiveGateways,
+              workspaceRooms,
+            );
+
+            if (gwResult.isSuccess && !currentLive.gatewayFault) {
+              updateRadioPacket(packetId, { status: 'received' });
+              updateEventStage(newEvt.id, 'gateway-processing', 'success', gwResult.logSummary);
+
+              const sirenResult = evaluateSirenActivation(
+                true,
+                !currentLive.sirenFault,
+                activeRoom.config.smartCareConfig?.sharedSirenEnabled !== false,
+              );
+
+              if (sirenResult.canSound) {
                 setSharedSiren(true);
-                updateEventStage(newEvt.id, 'shared-siren', 'success', 'Shared hostel siren activated.');
+                updateEventStage(newEvt.id, 'shared-siren', 'success', sirenResult.summary);
               } else {
-                updateEventStage(newEvt.id, 'shared-siren', 'failed', 'Shared siren output unavailable or faulted.');
+                updateEventStage(
+                  newEvt.id,
+                  'shared-siren',
+                  'failed',
+                  sirenResult.summary,
+                );
               }
             } else {
               updateRadioPacket(packetId, { status: 'failed', failureReason: 'gateway-offline' });
-              updateEventStage(newEvt.id, 'gateway-processing', 'failed', 'Destination gateway offline. Packet rejected.');
+              updateEventStage(newEvt.id, 'gateway-processing', 'failed', gwResult.logSummary);
             }
           }, 800);
         } else {

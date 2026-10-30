@@ -4,6 +4,7 @@ import { useSimulationStore } from '@/state/useSimulationStore';
 
 export const OccupancyControl: React.FC = () => {
   const {
+    runState,
     occupancyCount,
     vacancyTimerRemainingSeconds,
     acActivationDelayRemainingSeconds,
@@ -13,6 +14,7 @@ export const OccupancyControl: React.FC = () => {
   } = useSimulationStore();
 
   const isOccupied = occupancyCount > 0;
+  const isRunning = runState === 'running';
 
   return (
     <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-b from-[#0f1726] to-[#0c121e] border border-cyan-500/25 shadow-xl space-y-3.5 transition-all">
@@ -94,9 +96,13 @@ export const OccupancyControl: React.FC = () => {
           <div className="flex items-center gap-2 min-w-0">
             <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
             <span className="truncate">
-              {occupancyCount === 1
-                ? 'Primary occupant active · Fan running'
-                : `${occupancyCount} occupants detected · Continuous airflow`}
+              {!isRunning
+                ? occupancyCount === 1
+                  ? 'Occupant in room · Simulator paused (click "Run Sim" to start fan)'
+                  : `${occupancyCount} occupants present · Simulator paused (click "Run Sim" to start fan)`
+                : occupancyCount === 1
+                  ? 'Primary occupant active · Fan running'
+                  : `${occupancyCount} occupants detected · Continuous airflow`}
             </span>
           </div>
           <div className="flex items-center gap-1 shrink-0">

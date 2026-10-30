@@ -2,7 +2,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { evaluateSmartHomeRules } from '@/simulation/smart-home/control-rules';
 import { useSimulationStore } from '@/state/useSimulationStore';
 import { Room } from '@/domain/types';
-import { DEFAULT_FAN_POWER_WATTS } from '@/domain/constants';
+import { CoolingStateChangedEvent } from '@/domain/events';
+import { DEFAULT_FAN_POWER_WATTS, DEFAULT_AC_POWER_WATTS } from '@/domain/constants';
 
 describe('Person Entry, 5-Minute AC Delay & Cooling Progression (Requirements 1 & 4)', () => {
   const baseTestRoom: Room = {
@@ -33,7 +34,7 @@ describe('Person Entry, 5-Minute AC Delay & Cooling Progression (Requirements 1 
         enabled: true,
         setpointC: 26,
         compressorState: 'off',
-        powerWattsByState: { off: 0, resting: 15, cooling: 1200 },
+        powerWattsByState: { ...DEFAULT_AC_POWER_WATTS, off: 0, resting: 15, cooling: 1200 },
       },
     },
     createdAt: new Date().toISOString(),
@@ -191,7 +192,9 @@ describe('Person Entry, 5-Minute AC Delay & Cooling Progression (Requirements 1 
       expect(evalEvt?.summary).toContain('Outdoor temperature checked: 38°C; AC setpoint: 26°C');
 
       // Compressor ON event
-      const compEvt = result.events.find((e) => e.type === 'COOLING_STATE_CHANGED');
+      const compEvt = result.events.find(
+        (e): e is CoolingStateChangedEvent => e.type === 'COOLING_STATE_CHANGED'
+      );
       expect(compEvt).toBeDefined();
       expect(compEvt?.newState).toBe('cooling');
     });
@@ -351,7 +354,9 @@ describe('Person Entry, 5-Minute AC Delay & Cooling Progression (Requirements 1 
       });
 
       expect(result.nextCompressorState).toBe('cooling');
-      const compEvt = result.events.find((e) => e.type === 'COOLING_STATE_CHANGED');
+      const compEvt = result.events.find(
+        (e): e is CoolingStateChangedEvent => e.type === 'COOLING_STATE_CHANGED'
+      );
       expect(compEvt).toBeDefined();
       expect(compEvt?.newState).toBe('cooling');
     });
@@ -381,7 +386,9 @@ describe('Person Entry, 5-Minute AC Delay & Cooling Progression (Requirements 1 
       expect(result.nextCompressorState).toBe('off');
       expect(result.nextAcActivationDelaySeconds).toBeNull();
       expect(result.nextCoolingStepAccumulatorSeconds).toBe(0);
-      const offEvt = result.events.find((e) => e.type === 'COOLING_STATE_CHANGED');
+      const offEvt = result.events.find(
+        (e): e is CoolingStateChangedEvent => e.type === 'COOLING_STATE_CHANGED'
+      );
       expect(offEvt).toBeDefined();
       expect(offEvt?.newState).toBe('off');
     });

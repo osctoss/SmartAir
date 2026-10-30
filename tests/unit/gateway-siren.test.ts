@@ -8,9 +8,11 @@ describe('Gateway Processing & Building Siren Ingestion', () => {
     id: 'gw-01',
     propertyId: 'prop-01',
     name: 'Main Block Gateway',
-    location: 'Floor 1 Server Room',
     status: 'online',
-    lastHeartbeatIso: new Date().toISOString(),
+    radioAvailable: true,
+    sharedSirenId: 'siren-01',
+    sharedSirenAvailable: true,
+    createdAt: new Date().toISOString(),
   };
 
   const dummyRoom: Room = {
@@ -18,14 +20,18 @@ describe('Gateway Processing & Building Siren Ingestion', () => {
     propertyId: 'prop-01',
     name: 'Room 101',
     edition: 'smart-care',
+    deviceIds: ['dev-fan-101'],
     block: 'Block A',
     floor: 'Floor 1',
     createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
     config: {
       initialIndoorTempC: 28,
       outdoorTempC: 35,
       relativeHumidityPct: 50,
       occupancy: 'present',
+      occupancyCount: 1,
+      climateProfile: 'balanced',
       fanDeviceId: 'dev-fan-101',
       fanConfig: {
         speed: 'off',
@@ -36,6 +42,8 @@ describe('Gateway Processing & Building Siren Ingestion', () => {
       },
       smartCareConfig: {
         illustrativeThresholdKg: 10,
+        loadKg: 0,
+        loadPlacedOnFan: false,
         assignedGatewayId: 'gw-01',
         localAlarmEnabled: true,
         localAlarmAvailable: true,

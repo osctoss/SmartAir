@@ -27,17 +27,28 @@ This cheat sheet provides a crisp, high-impact demonstration script for evaluati
 - **Presenter Script**:
   > *"First, let's explore **SmartAir Smart Home** in Room H-301. Traditional cooling forces residents to chill rooms down to 21°C because ordinary fans don't coordinate with air conditioners.*
   >
-  > *Here, our physical model adheres to the fundamental law of thermal physics: fan airflow does not chill air temperature; instead, convective velocity creates a 2.5°C skin depression. Notice how our comfort index stays in the 'Optimal' green zone even with the AC set at an energy-conscious 26°C."*
+  > *Watch what happens when a resident enters: clicking `+ Person` places the resident in the room, immediately starts the ceiling fan at Medium speed, and starts a 5-minute countdown. Rather than blast the compressor instantly, the system evaluates whether fan circulation alone satisfies operative comfort.*
+  >
+  > *When cooling is required, the AC compressor activates and cools the room deterministically at 1°C every 5 seconds. As soon as the room reaches 28°C (setpoint + 2°C), the fan automatically steps down to Low RPM to eliminate drafts and noise. When the room reaches the 26°C setpoint, the compressor switches OFF, and the fan continues running at Low RPM to sustain convective airflow.*
+  >
+  > *With our modular hardware system, users can click 'Edit Devices' to install an Evaporative Cooler or remove the AC in real time. For coolers, our smart high-humidity protection shuts off the pump if humidity exceeds 65% RH to avoid mold and mugginess.*
+  >
+  > *Finally, when the resident leaves, a 20-second vacancy timer counts down and safely shuts down the fan."*
 
 - **Visual Actions**:
   1. Click **Room H-301** in the room list.
-  2. In the simulator, observe the rotating fan blades and airflow streamlines in the 2.5D isometric room.
-  3. Toggle **Quiet Mode** on: Point out that the fan speed automatically caps at Low to reduce acoustic noise during video calls or study sessions.
-  4. Advance time by clicking **`+1 Min`** or hitting **Run Sim**.
-  5. Click **"Energy Lab"** in the sidebar:
-     - Review the side-by-side comparative cards (Conventional Chilling vs SmartAir Coordinated).
-     - Click **"Run 24h Scenario Comparison"**.
-     - Point out the honest calculation: savings are derived directly from watt-hour Riemann integration without arbitrary hardcoded marketing numbers.
+  2. Click **`+ Person`** to simulate resident entry: observe the visual occupant avatar seated in the room, fan spinning immediately, and the 5-minute AC countdown starting.
+  3. Step the simulation forward: watch the 5-minute delay complete and the AC compressor switch ON.
+  4. Observe deterministic step-cooling: temperature drops 1°C every 5 seconds.
+  5. Watch the fan speed automatically drop to **Low RPM** at 28°C while compressor cools.
+  6. Watch the compressor switch **OFF** (`COMPRESSOR_REST`) at 26°C while fan maintains continuous Low RPM air circulation.
+  7. Click **"Edit Devices"** in the toolbar: demonstrate modular equipment management by toggling AC, Evaporative Cooler, or PC.
+  8. Push humidity past 65% on an active cooler: show the high-humidity protection cutoff banner and fan takeover.
+  9. Click **`- Person`** to empty the room: observe the 20-second vacancy countdown and fan auto-off.
+  10. Open **"Energy Lab"** in the sidebar:
+      - Review the side-by-side comparative cards (Conventional Chilling vs SmartAir Coordinated).
+      - Click **"Run 24h Scenario Comparison"**.
+      - Point out the honest calculation: savings are derived directly from watt-hour Riemann integration without arbitrary hardcoded marketing numbers.
 
 ---
 

@@ -17,7 +17,6 @@ import { useCareEventStore } from '@/state/useCareEventStore';
 import { selectWorkspaceMetrics } from '@/state/selectors';
 import { MetricCard } from '@/components/common/MetricCard';
 import { StatusBadge } from '@/components/common/StatusBadge';
-import { PageHeader } from '@/components/common/PageHeader';
 import { EmptyState } from '@/components/common/EmptyState';
 
 export const OverviewPage: React.FC = () => {
@@ -30,14 +29,57 @@ export const OverviewPage: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-200">
-      <PageHeader
-        title="Workspace Overview"
-        subtitle="Multi-room control center for comfort, energy and abnormal-load care intelligence."
-        actions={
-          <div className="flex items-center gap-3">
+      {/* Dashboard Brand Hero Banner */}
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#0d1624] via-[#0f1d30] to-[#0a1322] border border-cyan-500/20 p-6 sm:p-7 shadow-2xl shadow-cyan-950/20">
+        {/* Ambient atmospheric glows */}
+        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 left-1/3 -mb-10 w-64 h-64 bg-indigo-500/5 rounded-full blur-2xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-5">
+            {/* High-res Official Logo Display */}
+            <div className="relative shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-white p-2 flex items-center justify-center shadow-xl shadow-cyan-500/20 ring-2 ring-cyan-400/40 hover:scale-105 transition-all">
+              <img
+                src="/assets/icons/SmartAir_logo.svg"
+                alt="SmartAir Official Logo"
+                className="w-full h-full object-contain"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h1 className="text-2xl sm:text-3xl font-extrabold font-['Outfit'] tracking-tight text-white">
+                  SmartAir
+                </h1>
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-cyan-500/15 border border-cyan-400/30 text-cyan-300">
+                  Virtual Twin Platform
+                </span>
+                <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-500/15 border border-indigo-400/30 text-indigo-300">
+                  Dual-Edition Control
+                </span>
+              </div>
+              <p className="text-sm text-slate-300 max-w-2xl leading-relaxed">
+                Multi-room command center uniting convective BLDC ceiling fan cooling & inverter AC coordination with institutional abnormal-load life-safety telemetry.
+              </p>
+              <div className="flex flex-wrap items-center gap-3 pt-0.5 text-xs text-slate-400">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                  Smart Home: Convective Comfort
+                </span>
+                <span className="text-slate-600">•</span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-indigo-400" />
+                  Smart Care: Strain Telemetry & Mesh
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Action Buttons */}
+          <div className="flex items-center gap-3 shrink-0">
             <button
               onClick={() => navigate('/rooms/new')}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl text-sm font-semibold shadow-lg shadow-cyan-900/30 transition-all cursor-pointer"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-cyan-600 to-sky-600 hover:from-cyan-500 hover:to-sky-500 text-white rounded-xl text-sm font-semibold shadow-lg shadow-cyan-900/40 transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>Add Virtual Room</span>
@@ -50,14 +92,14 @@ export const OverviewPage: React.FC = () => {
                   navigate(`/rooms/${careRoom.id}`);
                 }
               }}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-sm font-semibold border border-slate-700 transition-all cursor-pointer"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-slate-800/90 hover:bg-slate-700 text-slate-200 rounded-xl text-sm font-semibold border border-slate-700 hover:border-slate-600 transition-all cursor-pointer"
             >
               <Play className="w-4 h-4 text-cyan-400" />
               <span>Launch Care Demo</span>
             </button>
           </div>
-        }
-      />
+        </div>
+      </div>
 
       {/* KPI Metric Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">

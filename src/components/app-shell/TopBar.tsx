@@ -28,6 +28,18 @@ export const TopBar: React.FC<TopBarProps> = ({ onOpenMobileMenu }) => {
           <Menu className="w-5 h-5" />
         </button>
 
+        {/* Mobile Brand Mark */}
+        <div className="flex items-center gap-2 lg:hidden">
+          <div className="w-7 h-7 rounded-lg bg-white p-0.5 flex items-center justify-center shadow-xs ring-1 ring-cyan-500/20 shrink-0">
+            <img
+              src="/assets/icons/SmartAir_logo.svg"
+              alt="SmartAir Logo"
+              className="w-full h-full object-contain"
+            />
+          </div>
+          <span className="font-bold text-white text-sm font-['Outfit']">SmartAir</span>
+        </div>
+
         {/* Quick Room Switcher Dropdown */}
         <div className="flex items-center gap-2">
           <label htmlFor="room-select" className="text-xs font-medium text-slate-400 hidden sm:inline">

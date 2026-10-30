@@ -1,4 +1,10 @@
+<div align="center">
+
+<img src="assets/icons/SmartAir_logo.svg" alt="SmartAir Logo" width="180" height="180" />
+
 # SmartAir — Interactive Digital-Twin Simulator
+
+**Convective BLDC Airflow Intelligence & Institutional Life-Safety Telemetry**
 
 [![GitHub Repository](https://img.shields.io/badge/GitHub-osctoss%2FSmartAir-181717?logo=github)](https://github.com/osctoss/SmartAir)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue?logo=typescript)](https://www.typescriptlang.org/)
@@ -7,6 +13,8 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38bdf8?logo=tailwindcss)](https://tailwindcss.com/)
 [![Vitest](https://img.shields.io/badge/Vitest-3.0-729b1a?logo=vitest)](https://vitest.dev/)
 [![Playwright](https://img.shields.io/badge/Playwright-1.50-2EAD33?logo=playwright)](https://playwright.dev/)
+
+</div>
 
 > **SIMULATION ONLY DISCLAIMER**
 > SmartAir is a software prototype and digital-twin simulator designed exclusively for educational, presentation, and technical evaluation purposes. It does **not** connect to real Atomberg ceiling fan hardware, real IoT microcontrollers, or physical sirens. It does **not** dial emergency services, make telephone calls, or send cellular SMS alerts. All thermal, comfort, and energy models are illustrative software estimates.

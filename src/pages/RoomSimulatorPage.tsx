@@ -317,7 +317,6 @@ export const RoomSimulatorPage: React.FC = () => {
                 {acInstalled && <CoolingControlPanel />}
                 {coolerInstalled && <CoolerControlPanel />}
               </div>
-              <OccupancyControl />
             </div>
           ) : (
             <div className="space-y-4">
@@ -339,11 +338,16 @@ export const RoomSimulatorPage: React.FC = () => {
           )}
         </div>
 
-        {/* Right Column (5 cols): Environmental Controls, Comfort & Energy Telemetry */}
+        {/* Right Column (5 cols): Person Occupancy, Environmental Controls, Comfort & Energy Telemetry */}
         <div className="lg:col-span-5 space-y-4">
           {activeRoom.edition === 'smart-home' ? (
             <>
+              {/* Add Person / Presence Control directly adjacent to the Room Scene */}
+              <OccupancyControl />
+
+              {/* Environmental Controls placed lower */}
               <EnvironmentalControlsCard />
+
               <ComfortScoreCard />
               <EnergyMetricCards />
             </>

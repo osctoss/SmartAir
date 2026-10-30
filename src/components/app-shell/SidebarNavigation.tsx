@@ -8,7 +8,6 @@ import {
   ShieldCheck,
   Zap,
   Settings,
-  Fan,
   X,
 } from 'lucide-react';
 import { useWorkspaceStore } from '@/state/useWorkspaceStore';
@@ -92,20 +91,29 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
         }`}
       >
         {/* Brand Header */}
-        <div className="h-16 flex items-center justify-between px-5 border-b border-slate-800/80">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-600 to-sky-400 flex items-center justify-center text-white shadow-lg shadow-cyan-900/30">
-              <Fan className="w-5 h-5 animate-[spin_8s_linear_infinite]" />
+        <div className="h-16 flex items-center justify-between px-4 border-b border-slate-800/80">
+          <NavLink
+            to="/overview"
+            onClick={onCloseMobile}
+            className="flex items-center gap-3 group focus:outline-hidden"
+            title="SmartAir Overview Dashboard"
+          >
+            <div className="w-10 h-10 rounded-xl bg-white p-1 flex items-center justify-center shadow-md shadow-cyan-950/40 ring-1 ring-cyan-500/30 group-hover:ring-cyan-400 group-hover:scale-105 transition-all shrink-0">
+              <img
+                src="/assets/icons/SmartAir_logo.svg"
+                alt="SmartAir Official Logo"
+                className="w-full h-full object-contain"
+              />
             </div>
             <div>
-              <span className="text-lg font-bold font-['Outfit'] tracking-tight text-white block leading-none">
+              <span className="text-lg font-bold font-['Outfit'] tracking-tight text-white block leading-none group-hover:text-cyan-300 transition-colors">
                 SmartAir
               </span>
               <span className="text-[10px] font-medium uppercase tracking-wider text-cyan-400 block mt-1">
                 Virtual Twin Sim
               </span>
             </div>
-          </div>
+          </NavLink>
 
           <button
             onClick={onCloseMobile}

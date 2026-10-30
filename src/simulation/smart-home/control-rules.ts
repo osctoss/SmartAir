@@ -254,15 +254,19 @@ export function evaluateSmartHomeRules(
 
     // 3B. Active AC Compressor Step Cooling (1°C every 5 seconds)
     // Thermostat threshold evaluation when no 5-minute delay is pending
-    if (nextAcActivationDelaySeconds === null && nextCompressorState === 'resting') {
+    if (
+      nextAcActivationDelaySeconds === null &&
+      (nextCompressorState === 'resting' || nextCompressorState === 'off')
+    ) {
       if (nextIndoorTempC > inputs.coolingSetpointC + 0.5) {
+        const oldState = nextCompressorState;
         nextCompressorState = 'cooling';
         events.push({
           id: `evt-ac-hysteresis-cooling-${inputs.simTimeMs}`,
           simTimeMs: inputs.simTimeMs,
           timestampIso: new Date().toISOString(),
           type: 'COOLING_STATE_CHANGED',
-          oldState: 'resting',
+          oldState,
           newState: 'cooling',
           indoorTemp: nextIndoorTempC,
           targetTemp: inputs.coolingSetpointC,
@@ -327,9 +331,24 @@ export function evaluateSmartHomeRules(
         nextCoolingStepAccumulatorSeconds = 0;
       }
     }
-  } else if (!isAcInstalled) {
-    // If AC is removed, compressor is always off and timers cancelled
-    nextCompressorState = 'off';
+  } else {
+    // AC is uninstalled or cooling is disabled (Power OFF)
+    if (nextCompressorState !== 'off') {
+      const oldState = nextCompressorState;
+      nextCompressorState = 'off';
+      events.push({
+        id: `evt-ac-disabled-off-${inputs.simTimeMs}`,
+        simTimeMs: inputs.simTimeMs,
+        timestampIso: new Date().toISOString(),
+        type: 'COOLING_STATE_CHANGED',
+        oldState,
+        newState: 'off',
+        indoorTemp: nextIndoorTempC,
+        targetTemp: inputs.coolingSetpointC,
+        summary: !isAcInstalled ? 'AC uninstalled — cooling shut down.' : 'AC switched OFF.',
+        severity: 'notice',
+      });
+    }
     nextAcActivationDelaySeconds = null;
     nextCoolingStepAccumulatorSeconds = 0;
   }

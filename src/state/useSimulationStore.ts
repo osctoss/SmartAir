@@ -452,7 +452,19 @@ export const useSimulationStore = create<SimulationState>((set) => ({
 
   setFanAutoMode: (fanAutoMode) => set({ fanAutoMode }),
   setQuietMode: (quietMode) => set({ quietMode }),
-  setCoolingEnabled: (coolingEnabled) => set({ coolingEnabled }),
+  setCoolingEnabled: (coolingEnabled) =>
+    set(() => {
+      if (!coolingEnabled) {
+        return {
+          coolingEnabled: false,
+          compressorState: 'off',
+          currentCoolingWatts: 0,
+          acActivationDelayRemainingSeconds: null,
+          coolingStepAccumulatorSeconds: 0,
+        };
+      }
+      return { coolingEnabled: true };
+    }),
   setCoolingSetpoint: (coolingSetpointC) => set({ coolingSetpointC }),
   setCompressorState: (compressorState) =>
     set({

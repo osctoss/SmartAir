@@ -31,6 +31,8 @@ export const RoomSimulatorPage: React.FC = () => {
   const navigate = useNavigate();
 
   const [editDevicesOpen, setEditDevicesOpen] = useState(false);
+  const lastSimTimeMsRef = React.useRef<number>(0);
+  const simMsAccumulatorRef = React.useRef<number>(0);
 
   const { rooms, selectedRoomId, selectRoom } = useWorkspaceStore();
   const {
@@ -61,6 +63,8 @@ export const RoomSimulatorPage: React.FC = () => {
         selectRoom(activeRoom.id);
       }
       initRoomSimulation(activeRoom);
+      lastSimTimeMsRef.current = 0;
+      simMsAccumulatorRef.current = 0;
     }
   }, [activeRoom?.id]);
 
@@ -69,10 +73,29 @@ export const RoomSimulatorPage: React.FC = () => {
     if (!activeRoom) return;
 
     if (activeRoom.edition === 'smart-home') {
-      if (runState !== 'running') return;
-
       const live = useSimulationStore.getState();
-      const deltaSimSeconds = 1;
+
+      // Detect reset
+      if (live.simTimeMs === 0 && lastSimTimeMsRef.current > 0) {
+        lastSimTimeMsRef.current = 0;
+        simMsAccumulatorRef.current = 0;
+        return;
+      }
+
+      const deltaMs = live.simTimeMs - lastSimTimeMsRef.current;
+      lastSimTimeMsRef.current = live.simTimeMs;
+
+      // If paused and time did not advance (no +1 Min click), do not step
+      if (runState !== 'running' && deltaMs <= 0) return;
+
+      // Accumulate elapsed virtual time
+      simMsAccumulatorRef.current += Math.max(0, deltaMs);
+
+      // Advance by at least 1 second of simulation time
+      if (simMsAccumulatorRef.current < 1000) return;
+
+      const deltaSimSeconds = Math.floor(simMsAccumulatorRef.current / 1000);
+      simMsAccumulatorRef.current %= 1000;
       const deltaSimHours = deltaSimSeconds / 3600;
 
       // 1. Advance Relative Humidity physics

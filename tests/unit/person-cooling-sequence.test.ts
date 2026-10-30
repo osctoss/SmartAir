@@ -328,6 +328,115 @@ describe('Person Entry, 5-Minute AC Delay & Cooling Progression (Requirements 1 
       expect(result.nextIndoorTempC).toBe(26);
       expect(result.nextCompressorState).toBe('off');
     });
+
+    it('re-activates AC compressor from standby/off when indoor temperature exceeds setpoint + 0.5°C', () => {
+      const result = evaluateSmartHomeRules({
+        simTimeMs: 40000,
+        indoorTempC: 27.5, // 1.5°C above setpoint
+        relativeHumidityPct: 45,
+        occupancy: 'present',
+        occupancyCount: 1,
+        currentVacancyTimerSeconds: null,
+        fanAutoMode: true,
+        quietMode: false,
+        quietSpeedLimit: 'low',
+        currentFanSpeed: 'low',
+        coolingEnabled: true,
+        coolingType: 'ac',
+        coolingSetpointC: 26,
+        currentCompressorState: 'off', // currently off after resting
+        acInstalled: true,
+        acActivationDelayRemainingSeconds: null, // delay already expired
+        deltaSimSeconds: 1,
+      });
+
+      expect(result.nextCompressorState).toBe('cooling');
+      const compEvt = result.events.find((e) => e.type === 'COOLING_STATE_CHANGED');
+      expect(compEvt).toBeDefined();
+      expect(compEvt?.newState).toBe('cooling');
+    });
+
+    it('immediately shuts down compressor and clears timers when cooling is disabled (Power OFF)', () => {
+      const result = evaluateSmartHomeRules({
+        simTimeMs: 45000,
+        indoorTempC: 29,
+        relativeHumidityPct: 45,
+        occupancy: 'present',
+        occupancyCount: 1,
+        currentVacancyTimerSeconds: null,
+        fanAutoMode: true,
+        quietMode: false,
+        quietSpeedLimit: 'low',
+        currentFanSpeed: 'medium',
+        coolingEnabled: false, // User turned AC OFF
+        coolingType: 'ac',
+        coolingSetpointC: 26,
+        currentCompressorState: 'cooling', // was active
+        acInstalled: true,
+        acActivationDelayRemainingSeconds: 120,
+        coolingStepAccumulatorSeconds: 3,
+        deltaSimSeconds: 1,
+      });
+
+      expect(result.nextCompressorState).toBe('off');
+      expect(result.nextAcActivationDelaySeconds).toBeNull();
+      expect(result.nextCoolingStepAccumulatorSeconds).toBe(0);
+      const offEvt = result.events.find((e) => e.type === 'COOLING_STATE_CHANGED');
+      expect(offEvt).toBeDefined();
+      expect(offEvt?.newState).toBe('off');
+    });
+
+    it('correctly advances countdown and multi-step cooling over simulated 60-second jump (+1 Min)', () => {
+      // 1. Advance 60s during 300s countdown
+      const countdownStep = evaluateSmartHomeRules({
+        simTimeMs: 60000,
+        indoorTempC: 30,
+        relativeHumidityPct: 45,
+        occupancy: 'present',
+        occupancyCount: 1,
+        currentVacancyTimerSeconds: null,
+        fanAutoMode: true,
+        quietMode: false,
+        quietSpeedLimit: 'low',
+        currentFanSpeed: 'medium',
+        coolingEnabled: true,
+        coolingType: 'ac',
+        coolingSetpointC: 26,
+        currentCompressorState: 'off',
+        acInstalled: true,
+        acActivationDelayRemainingSeconds: 300,
+        deltaSimSeconds: 60, // +1 Min jump
+      });
+
+      expect(countdownStep.nextAcActivationDelaySeconds).toBe(240); // 4 minutes remaining
+      expect(countdownStep.nextCompressorState).toBe('off');
+
+      // 2. Active cooling over 60s: at 5s/degree, 30°C cools down to 26°C setpoint (4°C drop in 20s) and rests
+      const coolingStep = evaluateSmartHomeRules({
+        simTimeMs: 360000,
+        indoorTempC: 30,
+        relativeHumidityPct: 45,
+        occupancy: 'present',
+        occupancyCount: 1,
+        currentVacancyTimerSeconds: null,
+        fanAutoMode: true,
+        quietMode: false,
+        quietSpeedLimit: 'low',
+        currentFanSpeed: 'medium',
+        coolingEnabled: true,
+        coolingType: 'ac',
+        coolingSetpointC: 26,
+        currentCompressorState: 'cooling',
+        acInstalled: true,
+        acActivationDelayRemainingSeconds: null,
+        coolingStepAccumulatorSeconds: 0,
+        deltaSimSeconds: 60,
+      });
+
+      expect(coolingStep.nextIndoorTempC).toBe(26);
+      expect(coolingStep.nextCompressorState).toBe('off'); // Reached setpoint and rests
+      expect(coolingStep.nextFanSpeed).toBe('low'); // Fan stays at low RPM
+    });
   });
 
   describe('Requirement 2: AC Removal Without Breaking Fan Logic', () => {
